@@ -90,7 +90,7 @@ services:
   seerr:
     image: seerr/seerr:latest
     container_name: seerr
-    user: "${SEERR_UID:-2105}:${MEDIA_GID:-2000}"
+    user: "${SEERR_UID}:${MEDIA_GID}"
     environment:
       - TZ=${TZ}
     volumes:
