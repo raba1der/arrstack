@@ -1,4 +1,4 @@
-# Docker Media Stack (Sonarr, Radarr, Bazarr, Prowlarr, qBittorrent)
+# Docker Media Stack (Sonarr, Radarr, Bazarr, Prowlarr, qBittorrent, Seerr)
 
 This repository provides:
 
@@ -8,6 +8,7 @@ This repository provides:
     -   Sonarr
     -   Radarr
     -   Bazarr
+    -   Seerr
 -   A `.env` configuration file
 -   A `create-arr-users.sh` script that:
     -   Creates dedicated system users for each service
@@ -21,10 +22,10 @@ This repository provides:
 
 All containers:
 
--   Run using LinuxServer.io images
--   Use explicit `PUID` and `PGID`
--   Share a common `/data` mount
--   Use `UMASK=002` to ensure group-writable files
+-   Run as dedicated non-root service users
+-   Store config under a shared `CONFIG_ROOT`
+-   Share a common media group for cross-service file access
+-   Use `UMASK=002` where supported to ensure group-writable files
 
 ### Shared Data Layout
 
@@ -34,7 +35,7 @@ Inside containers:
 
 On host (example):
 
-CONFIG_ROOT=/opt/arr/config DATA_ROOT=/srv/data
+CONFIG_ROOT=/opt/arr/config DOWNLOADS_ROOT=/srv/downloads MEDIA_ROOT=/mnt/ardbeg
 
 ------------------------------------------------------------------------
 
@@ -49,6 +50,7 @@ CONFIG_ROOT=/opt/arr/config DATA_ROOT=/srv/data
   Sonarr        8989       Web UI
   Radarr        7878       Web UI
   Bazarr        6767       Web UI
+  Seerr         5055       Web UI
 
 Access via:
 
@@ -67,6 +69,7 @@ Each service runs as its own Linux system user:
   sonarr        2102
   radarr        2103
   bazarr        2104
+  seerr         2105
 
 All services share a common group:
 
@@ -96,8 +99,9 @@ This will:
 
 -   Create service users
 -   Create `/opt/arr/config/*`
--   Create `/srv/data`
+-   Create `/srv/downloads`
 -   Apply correct ownership and permissions
+-   Prepare `/opt/arr/config/seerr` for Seerr
 
 ------------------------------------------------------------------------
 
@@ -110,7 +114,8 @@ TZ=Europe/Oslo
 UMASK=002
 
 CONFIG_ROOT=/opt/arr/config
-DATA_ROOT=/srv/data
+DOWNLOADS_ROOT=/srv/downloads
+MEDIA_ROOT=/mnt/ardbeg
 
 MEDIA_GID=2000
 
@@ -119,6 +124,7 @@ PROWLARR_UID=2101
 SONARR_UID=2102
 RADARR_UID=2103
 BAZARR_UID=2104
+SEERR_UID=2105
 ```
 
 ------------------------------------------------------------------------
@@ -155,7 +161,8 @@ All containers run on the default Docker bridge network.
 
 Internal container hostname resolution works automatically: - Sonarr →
 `http://qbittorrent:8080` - Radarr → `http://qbittorrent:8080` - Apps →
-`http://prowlarr:9696`
+`http://prowlarr:9696` - Seerr → `http://sonarr:8989` and
+`http://radarr:7878`
 
 No hardcoding of IP addresses required.
 
@@ -168,14 +175,14 @@ No hardcoding of IP addresses required.
 Ensure:
 
 -   UMASK=002
--   All services use the same PGID
+-   All services use the same shared group
 -   `/data` has 2775 permissions
 
 Fix manually if needed:
 
 ``` bash
-sudo chown -R root:media /srv/data
-sudo chmod -R 2775 /srv/data
+sudo chown -R root:media /srv/downloads
+sudo chmod -R 2775 /srv/downloads
 ```
 
 ------------------------------------------------------------------------
@@ -184,7 +191,7 @@ sudo chmod -R 2775 /srv/data
 
 This usually means:
 
--   PUID/PGID mismatch
+-   UID/GID mismatch
 -   Container was started before users were created
 
 Fix:
@@ -220,7 +227,7 @@ docker compose up -d
 
 This setup:
 
--   Uses strict UID/GID separation
+-   Uses strict per-service user separation
 -   Eliminates permission headaches
 -   Keeps clean host directory structure
 -   Follows Docker best practices
