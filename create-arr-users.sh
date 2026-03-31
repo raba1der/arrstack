@@ -6,7 +6,7 @@ set -euo pipefail
 #
 # Creates:
 #   - Shared group (default: media, GID 2000)
-#   - Dedicated system users for each service (qbittorrent, prowlarr, sonarr, radarr, bazarr)
+#   - Dedicated system users for each service (qbittorrent, prowlarr, sonarr, radarr, bazarr, seerr)
 #   - Local config directories under CONFIG_ROOT
 #   - Local downloads directory under DOWNLOADS_ROOT
 #
@@ -37,6 +37,7 @@ declare -A USERS=(
   [sonarr]=2102
   [radarr]=2103
   [bazarr]=2104
+  [seerr]=2105
 )
 
 ensure_group() {
@@ -81,7 +82,8 @@ make_dirs() {
     "$CONFIG_ROOT/prowlarr" \
     "$CONFIG_ROOT/sonarr" \
     "$CONFIG_ROOT/radarr" \
-    "$CONFIG_ROOT/bazarr"
+    "$CONFIG_ROOT/bazarr" \
+    "$CONFIG_ROOT/seerr"
 
   # Local downloads directory (local)
   mkdir -p "$DOWNLOADS_ROOT"

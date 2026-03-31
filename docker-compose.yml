@@ -87,4 +87,16 @@ services:
       - sonarr
       - radarr
 
+  seerr:
+    image: seerr/seerr:latest
+    container_name: seerr
+    user: "${SEERR_UID:-2105}:${MEDIA_GID:-2000}"
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_ROOT}/seerr:/app/config
+    ports:
+      - "5055:5055"
+    restart: unless-stopped
+
 networks: {}
