@@ -1,0 +1,90 @@
+services:
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - PUID=${QBITTORRENT_UID}
+      - PGID=${MEDIA_GID}
+      - TZ=${TZ}
+      - UMASK=${UMASK}
+      - WEBUI_PORT=8080
+    volumes:
+      - ${CONFIG_ROOT}/qbittorrent:/config
+      - ${DOWNLOADS_ROOT}:/data/downloads
+    ports:
+      - "8080:8080"     # Web UI
+      - "6881:6881"     # TCP listen port
+      - "6881:6881/udp" # UDP listen port (DHT/PeX)
+    restart: unless-stopped
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=${PROWLARR_UID}
+      - PGID=${MEDIA_GID}
+      - TZ=${TZ}
+      - UMASK=${UMASK}
+    volumes:
+      - ${CONFIG_ROOT}/prowlarr:/config
+    ports:
+      - "9696:9696"
+    restart: unless-stopped
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=${SONARR_UID}
+      - PGID=${MEDIA_GID}
+      - TZ=${TZ}
+      - UMASK=${UMASK}
+    volumes:
+      - ${CONFIG_ROOT}/sonarr:/config
+      - ${DOWNLOADS_ROOT}:/data/downloads
+      - ${MEDIA_ROOT}:/data/media
+    ports:
+      - "8989:8989"
+    restart: unless-stopped
+    depends_on:
+      - prowlarr
+      - qbittorrent
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=${RADARR_UID}
+      - PGID=${MEDIA_GID}
+      - TZ=${TZ}
+      - UMASK=${UMASK}
+    volumes:
+      - ${CONFIG_ROOT}/radarr:/config
+      - ${DOWNLOADS_ROOT}:/data/downloads
+      - ${MEDIA_ROOT}:/data/media
+    ports:
+      - "7878:7878"
+    restart: unless-stopped
+    depends_on:
+      - prowlarr
+      - qbittorrent
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=${BAZARR_UID}
+      - PGID=${MEDIA_GID}
+      - TZ=${TZ}
+      - UMASK=${UMASK}
+    volumes:
+      - ${CONFIG_ROOT}/bazarr:/config
+      - ${MEDIA_ROOT}:/data/media/
+    ports:
+      - "6767:6767"
+    restart: unless-stopped
+    depends_on:
+      - sonarr
+      - radarr
+
+networks: {}
